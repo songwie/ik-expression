@@ -1,0 +1,8 @@
+org.wltea.expression
+org.wltea.expression.datameta
+org.wltea.expression.format
+org.wltea.expression.format.reader
+org.wltea.expression.function
+org.wltea.expression.op
+org.wltea.expression.op.define
+org.wltea.expression.test
