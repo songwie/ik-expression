@@ -60,9 +60,11 @@ public class PreparedExpression {
 	 * @return
 	 */
 	public Object execute(){		
-		ExpressionExecutor ee = new ExpressionExecutor(new ExpressionContext());
+		ExpressionExecutor ee = new ExpressionExecutor();
 		//执行RPN		
 		try {
+			//添加变来到脚本变量容器
+			VariableContainer.setVariableMap(new HashMap<String , Variable>(variableMap));
 			Constant constant = ee.execute(expTokens);
 			return constant.toJavaObject();			
 		} catch (IllegalExpressionException e) {
@@ -72,6 +74,8 @@ public class PreparedExpression {
 			e.printStackTrace();
 			throw new RuntimeException("表达式：\"" + orgExpression + "\" 执行异常");
 		} finally{
+			//释放脚本变量容器
+			VariableContainer.removeVariableMap();
 		}
 	}
 }

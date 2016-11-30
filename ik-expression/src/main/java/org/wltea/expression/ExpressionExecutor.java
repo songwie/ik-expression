@@ -19,7 +19,6 @@ import org.wltea.expression.datameta.BaseDataMeta.DataType;
 import org.wltea.expression.format.ExpressionParser;
 import org.wltea.expression.format.FormatException;
 import org.wltea.expression.function.FunctionExecution;
-import org.wltea.expression.op.ConstantEvaluator;
 import org.wltea.expression.op.Operator;
 
 /**
@@ -29,11 +28,6 @@ import org.wltea.expression.op.Operator;
  * 2008-09-18
  */
 public class ExpressionExecutor {
-	private ExpressionContext ctx = null;
-	
-	public ExpressionExecutor(ExpressionContext ctx){
-		this.ctx = ctx;
-	}
 	
 	/**
 	 * 对表达式进行语法分析，将其转换成Token对象队列
@@ -87,7 +81,7 @@ public class ExpressionExecutor {
 				
 			} else if (ExpressionToken.ETokenType.ETOKEN_TYPE_VARIABLE == expToken.getTokenType()){
 				//验证变量声明	
-				Variable var = ctx.getVariable(expToken.getVariable().getVariableName()); 
+				Variable var = VariableContainer.getVariable(expToken.getVariable().getVariableName());
 				if(var == null){
 					//当变量没有定义时，视为null型
 					expToken.getVariable().setDataType(DataType.DATATYPE_NULL);
@@ -427,7 +421,7 @@ public class ExpressionExecutor {
 			}else if (ExpressionToken.ETokenType.ETOKEN_TYPE_VARIABLE == expToken.getTokenType()){
 				//读取一个变量
 				//从上下文获取变量的实际值，将其转化成常量Token，压入栈
-				Variable varWithValue = ctx.getVariable(expToken.getVariable().getVariableName());
+				Variable varWithValue = VariableContainer.getVariable(expToken.getVariable().getVariableName());
 				if(varWithValue != null){
 					//生成一个有值常量，varWithValue.getDataValue有可能是空值
 					ExpressionToken constantToken = ExpressionToken.createConstantToken(
@@ -467,7 +461,7 @@ public class ExpressionExecutor {
 					}
 				}
 				//构造引用常量对象
-				Reference ref = new Reference(expToken , args, ctx.isStrict());
+				Reference ref = new Reference(expToken , args);
 				ExpressionToken resultToken =  ExpressionToken.createReference(ref);
 				//将引用对象压入栈
 				compileStack.push(resultToken);
@@ -529,8 +523,6 @@ public class ExpressionExecutor {
 			}			
 		}
 		
-		ConstantEvaluator evaluator = new ConstantEvaluator(ctx.getEvaluator());
-		
 		//表达式编译完成，这是编译栈内应该只有一个编译结果
 		if(compileStack.size() == 1){
 			ExpressionToken token = compileStack.pop();
@@ -538,7 +530,7 @@ public class ExpressionExecutor {
 			//执行Reference常量
 			if(result.isReference()){
 				Reference resultRef = (Reference)result.getDataValue();				
-				return resultRef.execute(evaluator);
+				return resultRef.execute();
 				
 			}else{
 				//返回普通的常量
@@ -840,17 +832,8 @@ public class ExpressionExecutor {
 			}
 		}
 		//执行操作符校验，并返回校验
-		Constant result = null;
-		if(ctx.isStrict()){
-			result = op.verify(opToken.getStartPosition() , args);
-		}else {
-			if(op.getOpType() != args.length){
-				throw new IllegalArgumentException("运算操作符参数为空:" + op.getToken() + ", type:" + op.getOpType() + ", cur:" + args.length);
-			}else {
-				result = new Constant(BaseDataMeta.DataType.DATATYPE_FLOAT , Float.valueOf(0F));
-			}
-		}
-		return ExpressionToken.createConstantToken(result);	
+		Constant result = op.verify(opToken.getStartPosition() , args);
+		return ExpressionToken.createConstantToken(result);		 
 
 	}
 
